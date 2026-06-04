@@ -87,153 +87,95 @@ to run multiple container using docker compose
 
 we will run web server(nginx) & another container
 
-Building a Docker image is one of the best ways to containerize an application, ensuring it runs the exact same way on your local machine, a testing server, or in the cloud.
+-->Build Docker Image.
 
-To build a Docker image, you follow a straightforward workflow:
+Create index.html
 
-Create the App: Write your application code.
-Write the Dockerfile: Create a recipe book that tells Docker how to package your app.
-Build the Image: Run the Docker command to compile everything into a deployable image.
-package.json
+​notepad index.html​​
 
-This file defines our app's dependencies.
+​​Inside html file Paste:
 
-{
-  "name": "simple-docker-app",
-  "version": "1.0.0",
-  "main": "index.js",
-  "scripts": {
-    "start": "node index.js"
-  },
-  "dependencies": {
-    "express": "^4.19.2"
-  }
-}
-index.js
+​​​​<h1>Hello from Docker Application</h1>
 
-This is a simple web server that responds with "Hello, Docker!" when visited.
+Step 3 — Create Dockerfile
 
-const express = require('express');
-const app = express();
-const PORT = 3000;
+​notepad Dockerfile
 
-app.get('/', (req, res) => {
-  res.send('Hello, Docker! Your containerized app is running smoothly.');
-});
+​​​Write this code and save it
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
-Create the Dockerfile
-# Step 1: Use an official Node.js runtime as the base image
-FROM node:18-alpine
+​​​​FROM nginx
 
-# Step 2: Set the working directory inside the container
-WORKDIR /app
+COPY index.html /usr/share/nginx/html
 
-# Step 3: Copy package files and install dependencies
-COPY package*.json ./
-RUN npm install
+Step 4 — Build Docker Image (build)​
 
-# Step 4: Copy the rest of your application code
-COPY . .
+​docker build -t myappimage .
 
-# Step 5: Expose the port the app runs on
-EXPOSE 3000
+Step 5 — Run Container (run)
 
-# Step 6: Define the command to run your app
-CMD ["npm", "start"]
-Build the Docker Image
-docker build -t my-simple-app:v1 .
-Run Your New Image
-docker run -p 8080:3000 my-simple-app:v1
+​docker run -d -p 8080:80 --name myappcontainer myappimage
 
-Open your web browser and navigate to:
+Step 6 — Verify
+
+​Open browser:
+
+​​http://localhost:8080
+
+Output: Hello from Docker Application
+
+PART 2 — Run Multiple Containers using Docker Compose
+
+We will run:
+
+• Web server (nginx)
+• Another container (same image)
+
+Step 1 — Create docker-compose.yml
+
+​​notepad docker-compose.yml
+
+Write this and save it.
+
+version: '3'
+
+services:
+
+ web1:
+
+   image: nginx
+
+   ports:
+
+     - "8081:80"
+
+ web2:
+
+   image: nginx
+
+   ports:
+
+     - "8082:80"
+
+ 
+
+Step 2 — Run Compose (up)
+
+docker-compose up -d
+
+Step 3 — Check running containers
+
+docker ps
+
+Step 4 — Verify in browser
+
+Open:
 
 http://localhost:8081
 
-Let's build a simple multi-container setup. We will create a Node.js web application that connects to a Redis database to count how many times a page has been visited.
+http://localhost:8082
+Both will show nginx page
 
-Create the Application Files
+Step 5 — Stop all containers
 
-Create a new project folder and add the following two files:
+docker-compose down
 
-package.json
-{
-  "name": "compose-demo",
-  "version": "1.0.0",
-  "main": "index.js",
-  "dependencies": {
-    "express": "^4.19.2",
-    "redis": "^4.6.13"
-  }
-}
-index.js
-const express = require('express');
-const redis = require('redis');
-const app = express();
-
-// Connect to Redis using the service name 'redis-db' defined in docker-compose
-const client = redis.createClient({
-  url: 'redis://redis-db:6379'
-});
-
-client.on('error', err => console.log('Redis Client Error', err));
-
-async function startServer() {
-  await client.connect();
-
-  // Initialize visits if not present
-  await client.set('visits', 0);
-
-  app.get('/', async (req, res) => {
-    const visits = await client.incr('visits');
-    res.send(`Hello! This page has been viewed ${visits} times.`);
-  });
-
-  app.listen(3000, () => {
-    console.log('Server is running on port 3000');
-  });
-}
-
-startServer();
-Create the Dockerfile
-
-We need a blueprint to containerize our Node.js app.
-
-Create a file named Dockerfile:
-
-FROM node:18-alpine
-
-WORKDIR /app
-
-COPY package*.json ./
-
-RUN npm install
-
-COPY . .
-
-EXPOSE 3000
-
-CMD ["node", "index.js"]
-Create the docker-compose.yml File
-
-Now, instead of running a container for Node.js and another for Redis manually, create a file named docker-compose.yml in the same directory:
-
-version: '3.8'
-
-services:
-  web-app:
-    build: .
-    ports:
-      - "8080:3000"
-    depends_on:
-      - redis-db
-
-  redis-db:
-    image: "redis:alpine"
-
-Open your terminal in the project directory and run the magic command:
-
-docker compose up
-      
